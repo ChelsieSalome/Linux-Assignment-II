@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# ***** This script is installing packages from the list of packages in the "packages_list" file.
+
+#1. Ensuring the script is run with sudo privileges
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Error, the script must be run with elevated privileges"
+  echo "Please run the script as 'sudo $0'"
+  exit 1
+fi
+
+#2. Reading the packages_list file and transforming them in an array.
+packages=$(cat $HOME/packages_list)
+read -a packages_array <<< "$packages"
+# the -a option asks bash to store the input as an array, the name of the array is "packages_array".
+
+#3. Updating the existing packages
+pacman -Syu
+
+#4. Installing the packages from the list
+for package in "${packages_array[@]}"; do
+  echo "Installing package $package, please wait..."
+  pacman -S --noconfirm "$package"
+done
+#The --noconfirm option allows to install the packages without asking for user's confirmation, like pressing (n/Y), since the script is about automating tasks.
+
+
+
+

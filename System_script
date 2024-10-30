@@ -1,0 +1,28 @@
+#!/bin/bash
+
+
+#**** Ensuring the user will run the command with sudo privileges ******
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Error: This script must be run with sudo. Please run it as:"
+    echo "sudo $0"
+    exit 1
+fi
+
+
+#1. Cloning the example configuration files directory.
+#a. First step is to ensure "Git" is installed as we will be using that to clone.
+
+#****** Updating all the packages ******
+sudo pacman -Suy
+
+# ******** Installing git******
+# The "--noconfirm" option allows to install git without prompting for user confirmation, since the script ia about automating tasks.
+sudo pacman -S --noconfirm git
+
+# *******Cloning the repository into a directory named "config_files" which will be on the current user's home directory. *****
+git clone "https://gitlab.com/cit2420/2420-as2-starting-files" $HOME/config_files
+
+#b. Installing the packages: "kakoune" & "tmux" to use the configuration in the config directory
+
+

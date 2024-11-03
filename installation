@@ -73,11 +73,11 @@ log() {
 
 #################################################################################################################################
 # $SUDO_USER allows us to access the username of the original user who requested the elevated permissions.
-# Because we are running the script with sudo, using an environmental variable such as $HOME or $USER will change the value of th ee user to 'root'.
+# Because we are running the script with sudo, using an environmental variable such as $HOME or $USER will change the value of the e user to 'root'.
 # However, we want the user to be the actual user logged in and running the command.
 #################################################################################################################################
 
-USR_PATH=$SUDO_USER
+USR_PATH="/home/$SUDO_USER"
 
 ################################################################################################################################
 # Creating a file if it does not already exists
@@ -87,7 +87,7 @@ USR_PATH=$SUDO_USER
 #   -git
 ################################################################################################################################
 
-PACK_FILES_PATH="/home/$USR_PATH/packages_list"
+PACK_FILES_PATH="$USR_PATH/packages_list"
 
 if [[ ! -f $PACK_FILES_PATH ]]; then
   log "Creating the 'packages_list' file"
@@ -190,7 +190,7 @@ done
 
 #5. Cloning the existing files using git to the current user's home directory
 
-START_FILES_PATH="/home/$USR_PATH/.starter_files"
+START_FILES_PATH="$USR_PATH/.starter_files"
 
 if [[ ! -d $START_FILES_PATH ]]; then
   log "Creating a directory to store the cloned starter files from the remote repository."
@@ -225,3 +225,5 @@ fi
 #
 #   In summary, this script segment is designed to check for a specific directory (starter_files) in the user's home directory. If the directory does not exist, it creates it and checks if it is empty. If it is empty, it clones files from a remote Git repository into that directory. If the directory already exists or is not empty, it logs appropriate messages. This structure ensures that the cloning operation only occurs when necessary, helping to avoid overwriting existing files or directories.
 ################################################################################################################################
+
+

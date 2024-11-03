@@ -1,0 +1,85 @@
+#!/bin/bash
+
+
+# Title:
+# Description:
+#
+#
+
+
+################################################################################################################################
+#Print a usage message
+# Arguments:
+#   None
+# Outputs:
+#   Write a help message
+# Condition checking:
+#   - Requiring the user to run the script with sudo, to avoid having 'sudo inside the script.
+#   - Using $EUID (the effective user ID) to check that. If a user runs a script with sudo, the effective UID will be that of the root user (0), even though the actual UID (the value of $UID) is that of the user who invoked the command.
+#   - -ne: This stands for "not equal.
+##############################################################################################################################
+
+usage() {
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "\nError, the script must be run with elevated privileges"
+    echo -e "\nPlease run the script as 'sudo $0'"
+    exit 1
+  fi
+}
+usage
+
+################################################################################################################################
+# log additional message for verbose mode
+# locals:
+#   MESSAGE
+# Arguments:
+#   message to log
+# Outputs:
+#   log message passed as an argument
+# Explanation:
+#   - local: This keyword restricts the variable's scope to the function itself.
+#   - ${@}: This special variable represents all the arguments passed to the function. By using MESSAGE="${@}", the function captures all input arguments as a single string.
+#   - echo -e: The -e option enables interpretation of backslash escapes. This allows the use of escape sequences like \n to createnew lines in the output.
+#   - "\n$MESSAGE\n": This string prints a newline before and after the MESSAGE content. The result is that when log is called, itwill print the message on its own line with blank lines above and below it.
+###################################################################################################################################
+
+log() {
+local MESSAGE="${@}"
+echo -e "\n$MESSAGE\n"
+
+}
+#
+##################################################################################################################################
+# 1. Defining a function to create the symbolic links
+#
+symlink_creator() {
+  local SOURCE_PATH="${1}"
+  local DEST_PATH="${2}"
+
+    # Checking whether the destination file exists
+  if [[ -e "$DEST_PATH" ]]; then
+    log "The $DEST_PATH file already exist."
+  else
+    ln -s "$SOURCE_PATH" "$DEST_PATH"
+    log "Successfully created a symbolic link as follows: $SOURCE_PATH => $DEST_PATH "
+  fi
+}
+
+
+# 2. Creating symbolic links
+###################################################################################################################################
+# $SUDO_USER allows us to access the username of the original user who requested the elevated permissions.
+# Because we are running the script with sudo, using an environmental variable such as $HOME or $USER will change the value of the e user to 'root'.
+# However, we want the user to be the actual user logged in and running the command.
+##################################################################################################################################
+USR_PATH="/home/$SUDO_USER"
+
+
+# a. Pointing to the .bashrc file
+
+symlink_creator "$USR_PATH/.starter_files/home/bashrc" "$USR_PATH/.bashrc"
+
+###################################################################################################################################
+
+###################################################################################################################################
+

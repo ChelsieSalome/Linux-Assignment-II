@@ -1,0 +1,227 @@
+#!/bin/bash
+
+#Title: Installation script
+#Description: 
+#     # ***** This script is installing packages from the list of packages in the "packages_list" file that is stored on the home d#irectory of the current user.
+#     It also clones the starting files from a remote git repository to the current user's home directory.
+#
+#   Installing the packages: "kakoune" & "tmux" to use the configuration in the config directory
+#     Kakoune :
+#       modal text editor that with features such as: multiple section, customization etc.
+#     tmux :
+#       Allows to manage multiple terminal sessions from a single window
+#         sources: https://kakoune.org/ & https://www.redhat.com/en/blog/introduction-tmux-linux
+#options:
+#   Users can set verbose mode with -v for better troubleshooting
+#   Users can choose to run the script in normal mode with -n: there will not provide step-by-step logs of what the program is doing.
+
+##################################################################################################################################
+#Print a usage message
+# Arguments:
+#     None
+# Outputs:
+#     Write a help message
+# Condition checking:
+#     - Requiring the user to run the script with sudo, to avoid having 'sudo inside 
+#     the script.
+#
+#     - Using $EUID (the effective user ID) to check that. If a user runs a script 
+#     with sudo, the effective UID will be that of the root user (0), even though 
+#     the actual UID (the value of $UID) is that of the user who invoked the command.
+#
+#     -ne: This stands for "not equal.
+#################################################################################################################################
+usage() {
+    #Ensuring the script is run with sudo privileges
+
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "\nError, the script must be run with elevated privileges"
+    echo -e "\nPlease run the script as 'sudo $0'"
+    exit 1
+  fi
+}
+usage
+
+##################################################################################################################################
+# Enabling debugging
+#   showing you each command as it is executed, to identify where things go wrong.
+##################################################################################################################################
+
+set x
+
+##################################################################################################################################
+# log additional message for verbose mode
+# locals:
+#     MESSAGE
+# Arguments:
+#     message to log
+# Outputs:
+#     log message passed as an argument
+# Explanation:
+#   - local: This keyword restricts the variable's scope to the function itself.
+#   - ${@}: This special variable represents all the arguments passed to the function. By using MESSAGE="${@}", the function captures all input arguments as a single string.
+#   - echo -e: The -e option enables interpretation of backslash escapes. This allows the use of escape sequences like \n to create new lines in the output.
+#   - "\n$MESSAGE\n": This string prints a newline before and after the MESSAGE content. The result is that when log is called, it will print the message on its own line with blank lines above and below it.
+#################################################################################################################################
+
+log() {
+  local MESSAGE="${@}"
+  echo -e "\n$MESSAGE\n"
+}
+
+#1. Creating the packages_files file.
+
+#################################################################################################################################
+# $SUDO_USER allows us to access the username of the original user who requested the elevated permissions.
+# Because we are running the script with sudo, using an environmental variable such as $HOME or $USER will change the value of th ee user to 'root'.
+# However, we want the user to be the actual user logged in and running the command.
+#################################################################################################################################
+
+USR_PATH=$SUDO_USER
+
+################################################################################################################################
+# Creating a file if it does not already exists
+# Adding the packages to the file:
+#   -kakoune
+#   -tmux
+#   -git
+################################################################################################################################
+
+PACK_FILES_PATH="/home/$USR_PATH/packages_list"
+
+if [[ ! -f $PACK_FILES_PATH ]]; then
+  log "Creating the 'packages_list' file"
+  touch "$PACK_FILES_PATH"
+  echo "git kakoune tmux" >> $PACK_FILES_PATH
+  log "packages successfully added to the 'packages_list' file!"
+else
+  log "The file 'packages_list' file already exists !"
+fi
+
+################################################################################################################################
+# Command breakdown:
+#   - PACK_FILES_PATH="/home/$USR_PATH/packages_list"
+#       This line defines a variable named PACK_FILES_PATH and assigns it the path to a file called packages_list located in the home directory of the currently logged user.
+#   - if [[ ! -f $PACK_FILES_PATH ]]; then
+#       -f:  checks if a file exists and is a regular file.
+#       !:  negates the condition, so this expression evaluates to true if the file does not exist.
+#   - touch "$PACK_FILES_PATH"
+#       This line uses the touch command to create the packages_list file at the path specified by PACK_FILES_PATH
+#   - echo "git kakoune tmux" >> $PACK_FILES_PATH
+#       - This line appends the text "git kakoune tmux" to the packages_list file.
+#       - The >> operator is used to append data to a file.
+################################################################################################################################
+
+#2. Reading the packages_list file and transforming them in an array.
+
+packages=$(cat $PACK_FILES_PATH)
+
+read -a packages_array <<< "$packages"
+
+################################################################################################################################
+# Command breakdown:
+#   - packages=$(cat $PACK_FILES_PATH)
+#       This line uses command substitution to read the contents of the file specified by PACK_FILES_PATH and assign it to the variable packages.
+#   - read -a packages_array <<< "$packages"
+#       - This line uses the read command to split the contents of the packages variable into an array called packages_array.
+#       - The -a option tells the read command to store the words read from input into the array variable packages_array. Each word separated by whitespace in the input will become an element in the array.
+#       - The <<< operator is called a here-string. It passes the content of the packages variable as standard input to the read command. It effectively allows read to treat the value of packages as input.
+#       After executing both lines, packages_array will be populated as follows:
+#         1. packages_array[0] will be "git"
+#         2. packages_array[1] will be "kakoune"
+#         3. packages_array[2] will be "tmux"
+#
+# Source: https://ioflood.com/blog/bash-split-string-into-array/# :~: text=To%20split%20a%20string%20into%20an%20array%20in%20Bash%2%20you, storing%20them%20in%20an%20array.
+################################################################################################################################
+
+#3. Updating the existing packages
+
+################################################################################################################################
+# Updating packages before installing new ones is recommended to manage dependencies.
+# Some packages depend on specic versions of other packages, thus, updating ensures that all dependencies are the latest compatible versions, reducing the risk of conflicts that might prevent the new package from installing or working correctly.
+# Updates often include fixes for bugs or stability issues in packages.
+################################################################################################################################
+
+pacman -Syu
+
+################################################################################################################################
+# - pacman: This is the package manager for Arch Linux. It is used to install, update, and manage packages.
+# - S: This option stands for sync. It tells pacman to synchronize packages.
+# -y: This option stands for refresh. It instructs pacman to refresh the package databases before proceeding with any operations.
+# So this command updates the local package database and checks all currently installed packages and upgrades them to the latest versions available in the refreshed package database.
+#################################################################################################################################
+
+#*** Error handling for packages updates ****
+if [[ $? -ne 0 ]]; then
+  log "Error: Failed to update package database ... Exiting."
+  exit 1
+fi
+
+################################################################################################################################
+# - $?: This special variable contains the exit status of the most recently executed foreground command. A value of 0 typically indicates success, while any non-zero value indicates failure.
+# -ne: This stands for "not equal." So, the condition [[ $? -ne 0 ]] checks if the exit status of the last command is not equal to 0. If the previous command failed (i.e., it returned a non-zero exit status), the condition will evaluate to true.
+# exit 1: This line terminates the script with an exit status of 1, indicating that an error occured.
+################################################################################################################################
+
+
+#4. Installing the packages from the list & handling possible errors.
+
+for package in "${packages_array[@]}"; do
+  log "Installing package $package, please wait ..."
+  if pacman -S --noconfirm "$package"; then
+    log "Package $package installed successfully."
+  else
+    log "Error: $package package installation failed."
+    exit 1
+  fi
+done
+
+################################################################################################################################
+# Command breakdown:
+#   - for package in "${packages_array[@]}"; do:
+#       - This line initiates the for loop, where "package" is a variable that will take the value of each element in "package_array".
+#       - ${packages_array[@]}: This syntax expands to all elements of the packages_array as separate words. The quotes around it ensure that each element is treated as a single entity, preserving spaces in package names if any exist.
+#   - if pacman -S --noconfirm "$package"; then:
+#       - This line begins an if statement that executes the pacman command to install the current package.
+#       - pacman -S: This tells pacman to install the specified package.
+#       --noconfirm: This option allows the installation to proceed without prompting for confirmation, making the command non-interactive.
+#       "$package": This represents the name of the package being installed.
+################################################################################################################################
+
+#5. Cloning the existing files using git to the current user's home directory
+
+START_FILES_PATH="/home/$USR_PATH/starter_files"
+
+if [[ ! -d $START_FILES_PATH ]]; then
+  log "Creating a directory to store the cloned starter files from the remote repository."
+  mkdir $START_FILES_PATH
+else
+  log "The directory 'starter_files' already exits !"
+fi
+
+if [[ -z "$(ls -A $START_FILES_PATH)" ]]; then
+  git clone "https://gitlab.com/cit2420/2420-as2-starting-files" $START_FILES_PATH
+  log "Successfully cloned the files from the remote repository !"
+else
+  echo " The started files have already been cloned"
+fi
+
+################################################################################################################################
+# Command breakdown:
+#   1. START_FILES_PATH="/home/$USR_PATH/starter_files":
+#       This line defines a variable named START_FILES_PATH and assigns it a path to a directory called starter_files within the home directory of the currently logged in user.
+#   2. if [[ ! -d $START_FILES_PATH ]]; then:
+#       - d: checks if a directory exists.
+#       - !: negates the condition, so this condition is true if the directory does not exist.
+#   3. mkdir $START_FILES_PATH:
+#       This line creates the directory specified by START_FILES_PATH using the mkdir command. If the directory already exists, this command will fail.
+#   4. if [[ -z "$(ls -A $START_FILES_PATH)" ]]; then:
+#       - ls -A $START_FILES_PATH: The ls command lists all files in the directory, including hidden ones (due to -A), but not . and ...
+#       -z: This condition checks if the output of the command is empty. If there are no files in the directory, this condition will evaluate to true.
+#   5. git clone "https://gitlab.com/cit2420/2420-as2-starting-files" $START_FILES_PATH:
+#       If the directory is empty, this line executes the git clone command to clone the repository from the specified URL into the starting_files directory in the user's home directory.
+#   6. else echo "Starting files have already been cloned"
+#        This else block executes if the directory is not empty, logging a message that indicates the starter files have already been cloned.
+#
+#   In summary, this script segment is designed to check for a specific directory (starter_files) in the user's home directory. If the directory does not exist, it creates it and checks if it is empty. If it is empty, it clones files from a remote Git repository into that directory. If the directory already exists or is not empty, it logs appropriate messages. This structure ensures that the cloning operation only occurs when necessary, helping to avoid overwriting existing files or directories.
+################################################################################################################################

@@ -142,14 +142,15 @@ read -a packages_array <<< "$packages"
 # Updates often include fixes for bugs or stability issues in packages.
 ################################################################################################################################
 
-pacman -Syu
+pacman -Syu --noconfirm
 
 ################################################################################################################################
 # - pacman: This is the package manager for Arch Linux. It is used to install, update, and manage packages.
 # - S: This option stands for sync. It tells pacman to synchronize packages.
 # -y: This option stands for refresh. It instructs pacman to refresh the package databases before proceeding with any operations.
 # So this command updates the local package database and checks all currently installed packages and upgrades them to the latest versions available in the refreshed package database.
-#################################################################################################################################
+# --noconfirm: This option allows the installation to proceed without prompting for confirmation, making the command non-interactive.
+################################################################################################################################
 
 #*** Error handling for packages updates ****
 if [[ $? -ne 0 ]]; then

@@ -142,15 +142,14 @@ read -a packages_array <<< "$packages"
 # Updates often include fixes for bugs or stability issues in packages.
 ################################################################################################################################
 
-pacman -Syu --noconfirm
+pacman -Syu
 
 ################################################################################################################################
 # - pacman: This is the package manager for Arch Linux. It is used to install, update, and manage packages.
 # - S: This option stands for sync. It tells pacman to synchronize packages.
 # -y: This option stands for refresh. It instructs pacman to refresh the package databases before proceeding with any operations.
 # So this command updates the local package database and checks all currently installed packages and upgrades them to the latest versions available in the refreshed package database.
-# --noconfirm: This option allows the installation to proceed without prompting for confirmation, making the command non-interactive.
-################################################################################################################################
+#################################################################################################################################
 
 #*** Error handling for packages updates ****
 if [[ $? -ne 0 ]]; then
@@ -191,7 +190,7 @@ done
 
 #5. Cloning the existing files using git to the current user's home directory
 
-START_FILES_PATH="/home/$USR_PATH/starter_files"
+START_FILES_PATH="/home/$USR_PATH/.starter_files"
 
 if [[ ! -d $START_FILES_PATH ]]; then
   log "Creating a directory to store the cloned starter files from the remote repository."

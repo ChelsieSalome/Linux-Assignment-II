@@ -1,0 +1,252 @@
+#!/bin/bash
+
+# Title:
+# Description: Creating a new user
+#
+#options
+#   -u -> username
+#   -s -> shell
+#   -G additional groups
+#
+
+
+################################################################################################################################
+#Print a usage message
+# Arguments:
+#   None
+# Outputs:
+#   Write a help message
+# Condition checking:
+#   - Requiring the user to run the script with sudo, to avoid having 'sudo inside the script.
+#   - Using $EUID (the effective user ID) to check that. If a user runs a script with sudo, the effective UID will be that of the root user (0), even though the actual UID (the value of $UID) is that of the user who invoked the command.
+#   - -ne: This stands for "not equal.
+##############################################################################################################################
+
+usage() {
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "\nError, the script must be run with elevated privileges"
+    echo -e "\nPlease run the script as 'sudo $0'"
+    echo -e "\n*************Instructions for running the script ***********.\n"
+    echo "-> Run the script with the -u option to simply create a user with a default shell."
+    echo "-> Run the script with the -u & -s options to create a user with the specified shell."
+    echo "-> Run the script with the -u, -s & -g options to create a user with the specified shell and add them to the specified groups."
+    exit 1
+  fi
+}
+usage
+
+################################################################################################################################
+# log additional message for verbose mode
+# locals:
+#   MESSAGE
+# Arguments:
+#   message to log
+# Outputs:
+#   log message passed as an argument
+# Explanation:
+#   - local: This keyword restricts the variable's scope to the function itself.
+#   - ${@}: This special variable represents all the arguments passed to the function. By using MESSAGE="${@}", the function captures all input arguments as a single string.
+#   - echo -e: The -e option enables interpretation of backslash escapes. This allows the use of escape sequences like \n to createnew lines in the output.
+#   - "\n$MESSAGE\n": This string prints a newline before and after the MESSAGE content. The result is that when log is called, itwill print the message on its own line with blank lines above and below it.
+###################################################################################################################################
+
+log() {
+local MESSAGE="${@}"
+echo -e "\n$MESSAGE\n"
+
+}
+
+support() {
+  log "****** Usage guide ******"
+  echo " -u: to specify the user name"
+  echo " -s: to specify the shell name"
+  echo " -g: to specify the groups the user should be added to"
+  log " *************Instructions for running the script ***********."
+  echo "-> Run the script with the -u option to simply create a user with a default shell."
+  echo "-> Run the script with the -u & -s options to create a user with the specified shell."
+  echo "-> Run the script with the -u, -s & -g options to create a user with the specified shell and add them to the specified groups."
+  log "***** General Troubleshooting Guide ******* "
+  echo "1. Ensure the capitalization is correct."
+  echo "2. If the user needs to be added to more than 2 groups, enter the groups names separated by commas with no space in between."
+  echo "3. look for uncessarry whitespace."
+}
+
+###############################################################################################################################
+# Function to log a successful command
+###############################################################################################################################
+
+success() {
+  if [[ $? = 0 ]]; then
+    log "${1}"
+  fi
+}
+
+failure() {
+  if [[ $? -ne 0 ]]; then
+    support
+  fi
+}
+
+# Function to create symbolic links after looping through the files in a directory
+
+user_exist(){
+  local usr="${1}"
+  if [[ -d "/home/$usr" ]]; then
+    return 1   # the user name entered is not longer available
+
+  else
+    return 0
+  fi
+}
+
+shell_exist() {
+  local shl="${1}"
+
+  if grep -q "^/bin/$shl$" /etc/shells; then
+    return 0  #shell name entered is valid
+  else
+    return 1
+  fi     #shell name entered is not valid
+}
+
+group_exist() {
+  local grp="${1}"
+
+  if grep -q "^$grp:" /etc/group; then
+    return 0 # group exists
+  else
+    return 1 # group does not exists
+  fi
+}
+
+cp_skel() {
+  local usr="${1}"
+
+  cp -r /etc/skel/. /home/$usr
+  chown -R "$usr":"$usr" /home/$usr
+  success "Contents of /etc/skel successfully copied to $usr's home directory."
+}
+
+password() {
+  local usr="${1}"
+  passwd $usr
+  success "Password for user $usr successfully set."
+}
+
+#USR_PATH="/home/$SUDO_USER"
+
+while getopts ":u:s:g:" OPT; do
+  case $OPT in
+    u)
+      user="${OPTARG}"  #set the username
+      ;;
+
+    s)
+      shell="${OPTARG}"  #sets the shell name
+      ;;
+
+    g)
+      groups="${OPTARG}" # set groups (comma-separated list)
+      ;;
+
+    :)
+      log "Error: -${OPTARG} requires an argument"
+      exit 1
+      ;;
+
+    "?")
+      support
+      exit 1
+      ;;
+  esac
+done
+
+#1. Ensuring the username is provided
+if [[ -z $user ]]; then
+  log "Error: a username is required. Please run the script with at least the -u option. "
+  support
+  exit 1
+fi
+
+#2. Check if the provided user does not exists yet
+
+if user_exist "$user"; then
+
+  # Checks if the groups variable is not empty
+  if [[ -n "$groups" ]]; then
+    # The 'groups' variable contains comma separated names of groups.
+    # We have to check if each of these groups the user entered exist, since we cannot add a user to a group that has not been created.
+    # For that we have to turn the 'group' variable in a array and loop through very single group to check its existence.
+    IFS=","
+    read -a group_array <<< "$groups"
+    for group in "${group_array[@]}"; do
+      if ! group_exist "$group"; then
+        log "Group '$group' does not exits yet, creating it..."
+        groupadd "$group"
+        success "Successfully created the group $group."
+      fi
+    done
+  fi
+
+  # a. Creating a user with a home directory,  specified shell and groups if provided
+
+  if [[ -n "$shell" && -n "$groups" ]]; then
+    if shell_exist "$shell"; then
+      useradd -m -s "/bin/$shell" -G "$groups" "$user"
+      success "User $user created with shell '$shell' and added to group(s) $groups."
+      cp_skel "$user"
+      failure
+
+    else
+      log "Invalid shell entered, please enter a valid shell."
+    fi
+
+  elif [[ -n "$shell" ]]; then
+    if shell_exist "$shell"; then
+      useradd -m -s "/bin/$shell" "$user"
+      success "User $user created with shell '$shell'."
+      cp_skel "$user"
+      failure
+    else
+      log "Invalid shell entered, please enter a valid shell."
+    fi
+
+
+  elif [[ -n "$groups" ]]; then
+    useradd -m -G "$groups" "$user"
+    success "User $user created and added to groups $groups."
+    cp_skel "$user"
+    failure
+
+  else
+    useradd -m "$user"
+    success "User $user created with the default shell."
+    cp_skel "$user"
+    failure
+
+  fi
+ 
+  # Setting up a password for the user
+  password "$user"  
+
+
+else    # username entered already exists.
+  log " User $user already exists, please choose another username."
+  exit 1
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

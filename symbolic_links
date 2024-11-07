@@ -48,22 +48,103 @@ local MESSAGE="${@}"
 echo -e "\n$MESSAGE\n"
 
 }
-#
-##################################################################################################################################
-# 1. Defining a function to create the symbolic links
-#
-symlink_creator() {
-  local SOURCE_PATH="${1}"
-  local DEST_PATH="${2}"
 
-    # Checking whether the destination file exists
-  if [[ -e "$DEST_PATH" ]]; then
-    log "The $DEST_PATH file already exist."
-  else
-    ln -s "$SOURCE_PATH" "$DEST_PATH"
-    log "Successfully created a symbolic link as follows: $SOURCE_PATH => $DEST_PATH "
+###############################################################################################################################
+# Function to log a successful command
+###############################################################################################################################
+
+success() {
+  if [[ $? = 0 ]]; then
+    log "${1}"
   fi
 }
+
+# Function to create symbolic links after looping through the files in a directory
+#
+USR_PATH="/home/$SUDO_USER"
+
+sym_loop() {
+  local files_names="${1}"
+  local TARGET_DIR="${2}"
+  local DEST_DIR="$USR_PATH/$TARGET_DIR"
+  local FINAL_TARGET_DIR="$USR_PATH/.starter_files/$TARGET_DIR"
+
+ # Linking each files individually if it does not already exist in the target directory
+  if [[ ! -f $"$USR_PATH/$TARGET_DIR/$files_names" ]]; then
+      ln -s "$file" $"$USR_PATH/$TARGET_DIR/$file_names"
+
+      success "Successfully created a symbolic link as follows $file -> $USR_PATH/$TARGET_DIR/$filename"
+  else
+      log "$filename already exist in "$USR_PATH/$TARGET_DIR", consider renaming or moving it before creating a symbolic link"
+  fi
+}
+
+# Function to loop through a directory
+
+dir_loop(){
+  local directory="${1}"
+  for file in "$directory"/*; do
+    if [[ -d $file ]]; then
+      for sub_file in "$file"/*; do
+        sub_filename=$(basename "$sub_file")
+
+
+        sym_loop $sub_filename
+      done
+    fi
+    if [[ -f $file ]]; then
+      file_path=$(basename "$file")
+      sym_loop $file_path
+    fi
+  done
+}
+
+      
+
+
+
+
+##################################################################################################################################
+# 1. Defining a function to create the symbolic links
+
+USR_PATH="/home/$SUDO_USER"
+
+symlink_creator() {
+
+  local TARGET_DIR="${1}"
+  local DEST_DIR="$USR_PATH/$TARGET_DIR"
+  local FINAL_TARGET_DIR="$USR_PATH/.starter_files/$TARGET_DIR"
+  
+  # Creating a directory if it does not already exists
+  mkdir -p $DEST_DIR
+
+
+  # Looping through each file in the directory before to not overwrite already existing files with the same name.
+
+  #for file in "$FINAL_TARGET_DIR"/*; do
+    # Getting the filename without the directory path
+    #filename=$(basename "$file")
+    
+    # Linking each files individually if it does not already exist in the target directory
+    #if [[ ! -f $"$USR_PATH/$TARGET_DIR/$filename" ]]; then
+      #ln -s "$file" $"$USR_PATH/$TARGET_DIR/$filename"
+
+      #success "Successfully created a symbolic link as follows $file -> $USR_PATH/$TARGET_DIR/$filename"
+    #else
+      #log "$filename already exist in "$USR_PATH/$TARGET_DIR", consider renaming or moving it before creating a symbolic link"
+    #fi
+  #done
+}
+
+
+   
+
+    # Checking whether the destination file exists
+  #if [[ -e "$DEST_PATH" ]]; then
+    #log "The $DEST_PATH file already exist."
+  #else
+   # ln -s "$SOURCE_PATH" "$DEST_PATH"
+    #log "Successfully created a symbolic link as follows"
 
 
 # 2. Creating symbolic links
@@ -72,12 +153,13 @@ symlink_creator() {
 # Because we are running the script with sudo, using an environmental variable such as $HOME or $USER will change the value of the e user to 'root'.
 # However, we want the user to be the actual user logged in and running the command.
 ##################################################################################################################################
-USR_PATH="/home/$SUDO_USER"
+#USR_PATH="/home/$SUDO_USER"
 
 
 # a. Pointing to the .bashrc file
 
-symlink_creator "$USR_PATH/.starter_files/home/bashrc" "$USR_PATH/.bashrc"
+symlink_creator bin
+symlink_creator .config
 
 ###################################################################################################################################
 

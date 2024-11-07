@@ -1,0 +1,114 @@
+#!/bin/bash
+
+
+# Title:
+# Description:
+#
+#
+
+
+################################################################################################################################
+#Print a usage message
+# Arguments:
+#   None
+# Outputs:
+#   Write a help message
+# Condition checking:
+#   - Requiring the user to run the script with sudo, to avoid having 'sudo inside the script.
+#   - Using $EUID (the effective user ID) to check that. If a user runs a script with sudo, the effective UID will be that of the root user (0), even though the actual UID (the value of $UID) is that of the user who invoked the command.
+#   - -ne: This stands for "not equal.
+##############################################################################################################################
+
+usage() {
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "\nError, the script must be run with elevated privileges"
+    echo -e "\nPlease run the script as 'sudo $0'"
+    exit 1
+  fi
+}
+usage
+
+################################################################################################################################
+# log additional message for verbose mode
+# locals:
+#   MESSAGE
+# Arguments:
+#   message to log
+# Outputs:
+#   log message passed as an argument
+# Explanation:
+#   - local: This keyword restricts the variable's scope to the function itself.
+#   - ${@}: This special variable represents all the arguments passed to the function. By using MESSAGE="${@}", the function captures all input arguments as a single string.
+#   - echo -e: The -e option enables interpretation of backslash escapes. This allows the use of escape sequences like \n to createnew lines in the output.
+#   - "\n$MESSAGE\n": This string prints a newline before and after the MESSAGE content. The result is that when log is called, itwill print the message on its own line with blank lines above and below it.
+###################################################################################################################################
+
+log() {
+  local MESSAGE="${@}"
+  echo -e "\n$MESSAGE\n"
+}
+
+success() {
+  if [[ $? = 0 ]]; then
+    log "${1}"
+  fi
+}
+
+USR_PATH="/home/$SUDO_USER"
+
+# Function to create symbolic links after looping through the files in a directory
+sym_loop() {
+  local file_name="${1}"
+  local TARGET_DIR="${2}"
+  local DEST_DIR="$USR_PATH/.$TARGET_DIR"
+  local FINAL_TARGET_DIR="$USR_PATH/.starter_files/$TARGET_DIR"
+
+  # Create the target directory if it doesn't exist
+  mkdir -p "$DEST_DIR"
+
+  # Check if the symbolic link does not already exist
+  if [[ ! -L "$DEST_DIR/$file_name" ]]; then
+    ln -s "$FINAL_TARGET_DIR/$file_name" "$DEST_DIR/$file_name"
+    success "Successfully created a symbolic link: $FINAL_TARGET_DIR/$file_name -> $DEST_DIR/$file_name"
+  else
+    log "$file_name already exists in $DEST_DIR, consider renaming or moving it before creating a symbolic link"
+  fi
+}
+
+# Function to loop through a directory and process files
+dir_loop() {
+  local directory="${1}"
+  for file in "$directory"/*; do
+    log "Processing directory: $directory"
+
+    # Check if the item is a directory
+    if [[ -d $file ]]; then
+      for sub_file in "$file"/*; do
+        local parent_dir="$(basename "$directory")/$(basename "$file")"
+        sub_filename=$(basename "$sub_file")
+        sym_loop "$sub_filename" "$parent_dir"
+      done
+    fi
+    if [[ -f $file ]]; then
+      file_path=$(basename "$file")
+      sym_loop "$file_path" "$(basename "$directory")"
+    fi
+  done
+}
+
+# Function to create symbolic links for the specified target directory
+symlink_creator() {
+  local TARGET_DIR="$1"
+  local FINAL_TARGET_DIR="$USR_PATH/.starter_files/$TARGET_DIR"
+
+  # Loop through the directory and create symbolic links
+  dir_loop "$FINAL_TARGET_DIR"
+}
+
+# Calling the symlink creation functions
+symlink_creator "bin"
+symlink_creator "config"
+
+# Symbolic link to the ~/.bashrc file
+
+ln -s "$USR_PATH/.starter_files/home/bashrc" "$USR_PATH/.bashrc"

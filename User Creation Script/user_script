@@ -155,6 +155,7 @@ shell_support() {
 #   - The regex used here ("^$usr:") is designed to match a line that begins with a specific username or string stored in the $usr variable, followed by a colon (:).
 #   - If the username exists (i.e., `grep` finds a match), it returns 0, indicating success.
 #   - If no match is found, it returns 1, indicating that the username does not exist on the system.
+#   - Source: https://computing.stat.berkeley.edu/tutorial-using-bash/regex.html
 ##################################################################################################################################
 
 user_exist(){
@@ -236,6 +237,10 @@ cp_skel() {
   # The -R option is used to apply the changes to the entire /home/$usr directory as well as files and subdirectories in it.
   # Source: https://linuxize.com/post/linux-chown-command/
   success "Contents of /etc/skel successfully copied to $usr's home directory."
+  if [[ $? -ne 0 ]]; then
+    log "Error: Failed to copy skel files"
+    exit 1
+  fi
 }
 
 #################################################################################################################################

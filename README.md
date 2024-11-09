@@ -2,6 +2,8 @@
 # Assignment 2
 # SALOME CHELSIE LELE WAMBO - A01372274
 
+This script is designed to simplify system setup by creating symbolic links for configuration files and installing essential packages. It’s useful for setting up multiple configuration files across directories (like bin and config) and automating package installations. The script includes options for creating symbolic links, installing packages, or performing both tasks simultaneously.
+
 This repository contains a set of bash scripts designed for system setup and user creation on a Linux-based system. The scripts are organized into two directories: `system_setup` and `user_creation`.
 
 ## Directory Structure
@@ -29,7 +31,7 @@ This repository contains a set of bash scripts designed for system setup and use
    `./installation`
 
 3. **`symlinks`**
-    A bash script that creates symbolic links for configuration files. These links allow you to store and access configuration files in a central location without needing to manually copy them into each user's directory.
+    A bash script that creates symbolic links for configuration files.Those files are cloned from a remote repository using git. These links allow to store and access configuration files in a central location without needing to manually copy them into each user's directory.
 
     #### Usage:
 
@@ -66,6 +68,8 @@ This repository contains a set of bash scripts designed for system setup and use
 * The scripts assume the system is based on a Linux environment.
 
 ### Usage Instructions
+
+* Ensure the scripts: **symlinks**, **installation** & **system_setup** are in the same directory.
 * Make the scripts executable:
 
 

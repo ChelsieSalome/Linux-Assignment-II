@@ -15,12 +15,6 @@
 #   None
 
 
-##################################################################################################################################
-# Enabling debugging
-#   showing you each command as it is executed, to identify where things go wrong.
-##################################################################################################################################
-
-set x
 
 ##################################################################################################################################
 # log additional message for verbose mode
@@ -94,6 +88,8 @@ PACK_FILES_PATH="$USR_PATH/packages_list"
 if [[ ! -f $PACK_FILES_PATH ]]; then
   log "Creating the 'packages_list' file"
   touch "$PACK_FILES_PATH"
+
+  # >> is used to append to a file (not overwrite it)
   echo "git kakoune tmux" >> $PACK_FILES_PATH
   log "packages successfully added to the 'packages_list' file!"
 else
@@ -151,6 +147,7 @@ pacman -Syu --noconfirm
 # - S: This option stands for sync. It tells pacman to synchronize packages.
 # -y: This option stands for refresh. It instructs pacman to refresh the package databases before proceeding with any operations.
 # So this command updates the local package database and checks all currently installed packages and upgrades them to the latest versions available in the refreshed package database.
+# --confirm: To update the packages without asking the user to approve or deny (n/y).
 #################################################################################################################################
 
 #*** Error handling for packages updates ****

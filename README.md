@@ -26,7 +26,7 @@ This repository contains a set of bash scripts designed for system setup and use
    A bash script that reads from the `packages_list` file and installs the listed packages using a package manager (`pacman`). It automates the installation process by looping through the list of packages and ensuring they are installed.
 
    #### Usage:
-   ./installation
+   `./installation`
 
 3. **`symlinks`**
     A bash script that creates symbolic links for configuration files. These links allow you to store and access configuration files in a central location without needing to manually copy them into each user's directory.
@@ -39,6 +39,8 @@ This repository contains a set of bash scripts designed for system setup and use
     This script should be run with sufficient privileges (e.g., using sudo), as it installs packages and modifies system configurations.
 
 4. **`user_creation/`**
+
+    #### Usage
     **`user_script`**
     A bash script that automates the process of creating a new user on the system. This script will:
 

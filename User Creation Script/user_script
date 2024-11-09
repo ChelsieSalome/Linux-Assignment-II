@@ -232,7 +232,7 @@ cp_skel() {
   local usr="${1}"
 
   cp -r /etc/skel/. /home/$usr
-  chown -R "$usr":"$usr" /home/$usr
+  chown -R "$usr":"$usr" "/home/$usr"
   # The -R option is used to apply the changes to the entire /home/$usr directory as well as files and subdirectories in it.
   # Source: https://linuxize.com/post/linux-chown-command/
   success "Contents of /etc/skel successfully copied to $usr's home directory."

@@ -1,0 +1,128 @@
+#!/bin/bash
+
+##################################################################################################################################
+# Title: Symbolic Link Creation Script for Configuration and Initialization Files
+# Description:
+#   This script manages the creation of symbolic links for configuration and initialization files for a specified user.
+#   It includes options to:
+#     - Check if the script is run with elevated privileges (sudo).
+#     - Create symbolic links for directories such as "bin" and "config" from the `.starter_files` directory to the user's home directory.
+#     - It installed the packages specified in the packages_list file
+#
+# Options:
+#   - p : to run the 'instalation' script to install the packages
+#   - s : tu run the 'symlink' script and create symbolic links
+##################################################################################################################################
+
+##################################################################################################################################
+# Function: log
+# Arguments:
+#   message - the message to log
+# Outputs:
+#   - Logs messages to the console, formatted with line breaks.
+# Explanation:
+#   - `local MESSAGE="${@}"` captures all input arguments into a single string variable, `MESSAGE`.
+#   - `echo -e` enables interpretation of escape characters, allowing the message to print with newlines.
+##################################################################################################################################
+
+log() {
+  local MESSAGE="${@}"
+  echo -e "\n$MESSAGE\n"
+}
+
+################################################################################################################################
+#Function - usage
+# Arguments:
+#   None
+# Outputs:
+#   Write a usage message
+# Condition checking:
+#   - Requiring the user to run the script with sudo, to avoid having 'sudo inside the script.
+#   - Using $EUID (the effective user ID) to check that. If a user runs a script with sudo, the effective UID will be that of the root user (0), even though the actual UID (the value of $UID) is that of the user who invoked the command.
+#   - -ne: This stands for "not equal.
+##############################################################################################################################
+
+usage() {
+  if [[ $EUID -ne 0 ]]; then
+    log "Error, the script must be run with elevated privileges"
+    log "Please run the script as 'sudo $0'"
+    exit 1
+  fi
+}
+
+#################################################################################################################################
+# Function: success
+# Arguments:
+#   Message to log
+# Output:
+#   Print a message only if the previously run command was sueccessful.
+# Explanation:
+#   - Checks the exit code of the previously run command ($?).
+#   - If the exit code returns '0', the last command was successful and the message passed as an argument is printed out.
+###############################################################################################################################
+
+success() {
+  if [[ $? = 0 ]]; then
+    log "${1}"
+  fi
+}
+
+##################################################################################################################################
+# Function: support
+# Arguments:
+#   None
+# Output:
+#   - Displays usage instructions for the available script options.
+#################################################################################################################################
+
+support() {
+  log " ***** Script Usage Guide *****"
+  log "Use the following options when running the script. Ensure capitalization is correct (No arguments required)."
+  echo " -p to install packages."
+  echo " -s to create the symbolic links."
+  echo " -p & -s to do both."
+}
+
+
+#Calling the function
+usage
+
+while getopts "ps" OPT; do
+  case "${OPT}" in
+    
+    s)
+       # If the option is -s, call the symlinks script
+      ./symlinks
+
+      # variable to keep track of the options passed.
+      options=1
+      success "All the Symbolic links have been created !"
+      ;;
+
+    p)
+      # If the option is -p, call the installation script
+      ./installation
+      options=1
+      success "All the packages were installed successfully !"
+      ;;
+      
+      # If an invalid option is provided, display an error and usage support
+    ?) log "Error: Invalid option"
+      support
+      exit 1
+      ;;
+  esac
+done
+
+# If no options were passed, print an error
+if [[ $options -eq 0 ]]; then
+  log "Error: No options were passed. Please provide at least one option."
+  support
+  exit 1
+fi
+
+#End of script
+
+
+
+
